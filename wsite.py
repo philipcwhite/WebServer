@@ -1,12 +1,11 @@
-from wserver import app, web_request
-#from wserver import web_request
+from wserver import app, web_vars
 
 class controller(object):
     def index(args):
         resp = """<html>
         <body>
         <h2>Index</h2>
-        Cookie:<br />""" + web_request.cookie + """</body>
+        Session ID:<br />""" + web_vars.session_id + """</body>
         </html>"""
         return resp
     def home(args):
