@@ -1,14 +1,14 @@
-from wserver import app, web_vars
+from wserver import app, web_handle
 
 class controller(object):
-    def index(args):
+    def index(self, args):
         resp = """<html>
         <body>
         <h2>Index</h2>
-        Session ID:<br />""" + web_vars.session_id + """</body>
+        Session ID:<br />""" + self.session_id + """</body>
         </html>"""
         return resp
-    def home(args):
+    def home(self, args):
         resp = """<html>
         <body>
         <h2>Home</h2>
