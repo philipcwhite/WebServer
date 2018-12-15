@@ -2,7 +2,6 @@ import asyncio
 import ssl
 import uuid
 import datetime
-#import time
 
 
 class app_vars:
@@ -44,9 +43,10 @@ class web_handle(asyncio.Protocol):
 
     def cookie(self, key = None, value = None, expires = None):
         # Set session cookie
-        if not 'session_id' in self.get_cookie:
+        if self.get_cookie is None:
+        #if not 'session_id' in self.get_cookie:
             self.session_id = str(uuid.uuid1())
-            expire = 3600
+            expire = str(3600)
             if not self.set_cookie is None:
                 self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + expire + '; path=/ \r\n'
             else:
