@@ -2,16 +2,15 @@ import asyncio
 import ssl
 import uuid
 import datetime
-import time
 
 
 class app_vars:
     server_ip = '0.0.0.0'
     server_port = 9999
     ssl_enabled = False
-    cert_path = "./"
-    cert_name = "localhost.crt"
-    cert_key = "localhost.pem"
+    cert_path = './'
+    cert_name = 'localhost.crt'
+    cert_key = 'localhost.pem'
 
 class session:
     session_list = []
@@ -42,13 +41,17 @@ class web_handle(asyncio.Protocol):
                     'text': 'text/plain',
                     'txt': 'text/plain'}
 
-    def cookie(self, payload = None, expires = None):
-        if not 'session_id' in self.get_cookie:
+    def cookie(self, key = None, value = None, expires = None):
+        # Set session cookie
+        if self.get_cookie is None:
+        #if not 'session_id' in self.get_cookie:
             self.session_id = str(uuid.uuid1())
-            lease = 360000  # In seconds
-            end = time.localtime(time.time() + lease)
-            expire = time.strftime('%a, %d-%b-%Y %T GMT', end)
-            self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; expires=' + expire + '; path=/ \r\n'
+            expire = str(3600)
+            if not self.set_cookie is None:
+                self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + expire + '; path=/ \r\n'
+            else:
+                self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + expire + '; path=/ \r\n'
+        # Set other cookies
 
     def login(self, username):
         user=session(self.session_id, username, datetime.datetime.now())
@@ -59,11 +62,7 @@ class web_handle(asyncio.Protocol):
             if o.session_user == username:
                 del session.session_list[i]
                 break
-        # Use cookie function to expire cookie
-        lease = 0  # In seconds
-        end = time.localtime(time.time() + lease)
-        expire = time.strftime('%a, %d-%b-%Y %T GMT', end)
-        self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; expires=' + expire + '; path=/ \r\n'
+        self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=0; path=/ \r\n'
 
     def user(self):
         user = None
@@ -86,27 +85,27 @@ class web_handle(asyncio.Protocol):
             self.extention = 'html'
         self.arguments = request_list[-1]
         for i in request_list:
-            if "Cookie:" in i: 
+            if 'Cookie:' in i: 
                 self.get_cookie = i.replace("Cookie: ","")
                 session_id = self.get_cookie.split(';')[0].replace('session_id=','')
                 if not session_id == '':
                     self.session_id = session_id
-        print("METHOD:" + self.method)
-        print("PATH:" + self.path)
-        print("EXT:" + self.extention)
-        print("ARGUMENTS:" + self.arguments)
+        print('METHOD:' + self.method)
+        print('PATH:' + self.path)
+        print('EXT:' + self.extention)
+        print('ARGUMENTS:' + self.arguments)
         if not self.get_cookie is None:
-            print("COOKIE:" + self.get_cookie)
-            print("SESSION_ID:" + self.session_id)
+            print('COOKIE:' + self.get_cookie)
+            print('SESSION_ID:' + self.session_id)
 
-        print("")
+        print('')
 
     def set_headers(self):
-        http_status =  "HTTP/1.1 200 OK\r\n"
-        content_type = 'Content-Type: ' + self.content_dict[self.extention] + " \r\n"
-        server_date = "Date: " + str(datetime.datetime.now()) + "\r\n"
-        server_name = "Server: Custom\r\n"
-        content_length = "Content-Length: " + self.length + " \r\n"
+        http_status =  'HTTP/1.1 200 OK\r\n'
+        content_type = 'Content-Type: ' + self.content_dict[self.extention] + ' \r\n'
+        server_date = 'Date: ' + str(datetime.datetime.now()) + '\r\n'
+        server_name = 'Server: Custom\r\n'
+        content_length = 'Content-Length: ' + self.length + '\r\n'
         accept_range = ''
 
         if 'image' in self.content_dict[self.extention]: 
@@ -117,27 +116,38 @@ class web_handle(asyncio.Protocol):
             self.cookie()
             cookie_text = ''
             if not self.set_cookie is None: cookie_text = self.set_cookie
-            head = http_status + content_type + server_date + server_name + content_length + cookie_text + "\r\n"
+            head = http_status + content_type + server_date + server_name + content_length + cookie_text + '\r\n'
             return head.encode()  
   
     def call_controller(self):        
+        args = []
+        parsed_url = self.path.split('?')
+        path1 = parsed_url[0]
+        path_func = path1.split('/')[1]
+        if path_func is '':path_func='index'
         for i in dir(self.controller):
             if not "__" in i:
-                if self.path == "/" and i=="index":
-                    func = getattr(self.controller,i)
-                    proc=func(self, self.arguments)
+                if i == path_func:
+                    for x in path1.split('/'):
+                        if not x is '': 
+                            args.append(x)
+                    if args:
+                        del args[0]
+                    if '?' in self.path:
+                        args1 = parsed_url[1].split('&')
+                        for x in args1:
+                            args.append(x.split('=')[1])
+                    self.arguments = args
+                    func = getattr(self.controller, i)
+                    proc = None
+                    if args:
+                        proc = func(self, *args)
+                    else:
+                        proc = func(self)
                     self.length=str(len(proc))
                     head = self.set_headers()
                     resp_msg = head + proc.encode()
                     return resp_msg
-                if i == self.path.replace("/",""):
-                    func = getattr(self.controller,i)
-                    proc=func(self, self.arguments)
-                    self.length=str(len(proc))
-                    head = self.set_headers()
-                    resp_msg = head + proc.encode()
-                    return resp_msg
-  
 
     def call_static(self):
         if '/favicon.ico' in self.path or '/static/' in self.path:
@@ -165,8 +175,9 @@ class web_handle(asyncio.Protocol):
         #loop.call_soon_threadsafe(loop.stop)
 
         reply = None
-        reply = self.call_controller()
-        if reply is None: reply = self.call_static()
+        reply = self.call_static()
+        #reply = self.call_controller()
+        if reply is None: reply = self.call_controller()
         self.transport.write(reply)               
         self.transport.close()
         
@@ -186,9 +197,7 @@ class app:
     def start(controller):
         web_handle.controller = controller
         app_vars.ssl_enabled = False
-        """try:
+        try:
             asyncio.run(web_server.connection_loop())
         except:
-            pass"""
-        asyncio.run(web_server.connection_loop())
-   
+            pass
