@@ -26,7 +26,6 @@ class web_handle(asyncio.Protocol):
     controller = None
     arguments = None
     extention = None
-    length = None
     method = None
     path = None
     content_dict = {'css': 'text/css',
@@ -40,18 +39,32 @@ class web_handle(asyncio.Protocol):
                     'png': 'image/png',
                     'text': 'text/plain',
                     'txt': 'text/plain'}
+    response_code = None
+    response_location = None
+    response_length = None
+    response_codes = {200: 'HTTP/1.1 200 OK',
+                      302: 'HTTP/1.1 302 Found',
+                      404: 'HTTP/1.1 404 Not Found'}
 
     def cookie(self, key = None, value = None, expires = None):
         # Set session cookie
+        session_expire = str(3600)
+        session_id = str(uuid.uuid1())
         if self.get_cookie is None:
-        #if not 'session_id' in self.get_cookie:
-            self.session_id = str(uuid.uuid1())
-            expire = str(3600)
+            self.session_id = session_id
             if not self.set_cookie is None:
-                self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + expire + '; path=/ \r\n'
+                self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + session_expire + '; path=/ \r\n'
             else:
-                self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + expire + '; path=/ \r\n'
+                self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + session_expire + '; path=/ \r\n'
+        else:
+            if not 'session_id' in self.get_cookie:
+                if not self.set_cookie is None:
+                    self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + session_expire + '; path=/ \r\n'   
         # Set other cookies
+        if not key is None:
+            if value is None: value = ''
+            if expires is None: expires = ''
+            self.set_cookie += 'Set-Cookie: ' + str(key) + '=' + str(value) + '; max-age=' + str(expires) + '; path=/ \r\n'
 
     def login(self, username):
         user=session(self.session_id, username, datetime.datetime.now())
@@ -73,6 +86,15 @@ class web_handle(asyncio.Protocol):
             return user
         else:
             return 'Not Authorized'
+
+    def error_404(self):
+        self.response_code = 404
+        html = '<html><head><title>404 Not Found</title></head><body><h1>404 Not Found</h1></body></html>'
+        return html
+
+    def redirect(self, location):
+        self.response_code = 302
+        self.response_location = 'Location: ' + location + '\r\n'
 
     def get_headers(self, request):
         request_list = []
@@ -97,15 +119,19 @@ class web_handle(asyncio.Protocol):
         if not self.get_cookie is None:
             print('COOKIE:' + self.get_cookie)
             print('SESSION_ID:' + self.session_id)
-
         print('')
 
     def set_headers(self):
-        http_status =  'HTTP/1.1 200 OK\r\n'
+        # Set headers for good responses
+        response_code = 200
+        response_location = ''
+        if not self.response_code is None: response_code = self.response_code
+        if not self.response_location is None: response_location = self.response_location
+        http_status = self.response_codes[response_code] + '\r\n'  #'HTTP/1.1 200 OK\r\n'
         content_type = 'Content-Type: ' + self.content_dict[self.extention] + ' \r\n'
         server_date = 'Date: ' + str(datetime.datetime.now()) + '\r\n'
-        server_name = 'Server: Custom\r\n'
-        content_length = 'Content-Length: ' + self.length + '\r\n'
+        server_name = 'Server: wServer 0.01b\r\n'
+        content_length = 'Content-Length: ' + self.response_length + '\r\n'
         accept_range = ''
 
         if 'image' in self.content_dict[self.extention]: 
@@ -116,7 +142,7 @@ class web_handle(asyncio.Protocol):
             self.cookie()
             cookie_text = ''
             if not self.set_cookie is None: cookie_text = self.set_cookie
-            head = http_status + content_type + server_date + server_name + content_length + cookie_text + '\r\n'
+            head = http_status + content_type + server_date + server_name + content_length + cookie_text + response_location + '\r\n'
             return head.encode()  
   
     def call_controller(self):        
@@ -140,11 +166,15 @@ class web_handle(asyncio.Protocol):
                     self.arguments = args
                     func = getattr(self.controller, i)
                     proc = None
-                    if args:
-                        proc = func(self, *args)
-                    else:
-                        proc = func(self)
-                    self.length=str(len(proc))
+                    try:
+                        if args:
+                            proc = func(self, *args)
+                        else:
+                            proc = func(self)
+                    except:
+                        proc = self.error_404()
+                    if proc is None: proc = ''
+                    self.response_length=str(len(proc))
                     head = self.set_headers()
                     resp_msg = head + proc.encode()
                     return resp_msg
@@ -155,7 +185,7 @@ class web_handle(asyncio.Protocol):
             if 'favicon.ico' in url: url = 'static/favicon.ico'
             f = open(url, "rb")
             obj = f.read()
-            self.length=str(len(obj))
+            self.response_length=str(len(obj))
             head = self.set_headers()
             resp = head + obj
             return resp
