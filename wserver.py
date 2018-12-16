@@ -67,22 +67,31 @@ class web_handle(asyncio.Protocol):
             self.set_cookie += 'Set-Cookie: ' + str(key) + '=' + str(value) + '; max-age=' + str(expires) + '; path=/ \r\n'
 
     def login(self, username):
-        user=session(self.session_id, username, datetime.datetime.now())
+        expires = datetime.datetime.now() + datetime.timedelta(hours=1)
+        user=session(self.session_id, username, expires)
         session.session_list.append(user)
 
-    def logout(self, username):
+    def logout(self, user):
         for i, o in enumerate(session.session_list):
-            if o.session_user == username:
+            if o.session_user == user:
                 del session.session_list[i]
                 break
         self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=0; path=/ \r\n'
 
     def user(self):
         user = None
+        expires = None
         for i in session.session_list:
             if i.session_id == self.session_id:
                 user = i.session_user
-        if not user is None:
+                expires = i.session_expire
+        if not expires is None:
+            if expires < datetime.datetime.now():
+                for i, o in enumerate(session.session_list):
+                    if o.session_user == user:
+                        del session.session_list[i]
+                        break
+        if not user is None and expires > datetime.datetime.now():
             return user
         else:
             return 'Not Authorized'
@@ -162,6 +171,11 @@ class web_handle(asyncio.Protocol):
                     if '?' in self.path:
                         args1 = parsed_url[1].split('&')
                         for x in args1:
+                            args.append(x.split('=')[1])
+                    # Handle POST
+                    if self.method == 'POST':
+                        args2 = self.arguments.split('&')
+                        for x in args2:
                             args.append(x.split('=')[1])
                     self.arguments = args
                     func = getattr(self.controller, i)
