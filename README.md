@@ -13,7 +13,8 @@ class controller(object):
         response = '<html><body>Hello World!</body></html>'
         return response
 
-app.start(controller)```
+app.start(controller)
+```
 
 ## Updates
 12/16/2018 - Cleaned up some code an added some examples to the wsite.py file for authentication.  
