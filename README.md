@@ -5,6 +5,7 @@ This is a simple Python webserver that I am writing using asyncio.  It is 'VERY'
 
 ## Usage
 
+```python
 from wserver import app
 
 class controller(object):
@@ -12,7 +13,7 @@ class controller(object):
         response = '<html><body>Hello World!</body></html>'
         return response
 
-app.start(controller)
+app.start(controller)```
 
 ## Updates
 12/16/2018 - Cleaned up some code an added some examples to the wsite.py file for authentication.  
