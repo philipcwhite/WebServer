@@ -1,8 +1,15 @@
+# Copyright (C) 2018 Phil White - All Rights Reserved
+# You may use, distribute and modify this code under the
+# terms of the Apache 2 license.
+#
+# You should have received a copy of the Apache 2 license with
+# this file. If not, please visit : 
+# https://github.com/philipcwhite/webserver
+
 import asyncio
 import ssl
 import uuid
 import datetime
-
 
 class app_vars:
     server_ip = '0.0.0.0'
@@ -25,7 +32,7 @@ class web_handle(asyncio.Protocol):
     set_cookie = None
     controller = None
     arguments = None
-    extention = None
+    extension = None
     method = None
     path = None
     content_dict = {'css': 'text/css',
@@ -106,24 +113,25 @@ class web_handle(asyncio.Protocol):
         self.response_location = 'Location: ' + location + '\r\n'
 
     def get_headers(self, request):
+        # Process all incoming header requests
         request_list = []
         request_list = request.split("\n")
         self.method = request_list[0].split(" ")[0]
         self.path = request_list[0].split(" ")[1]
         if '.' in self.path:
-            self.extention = self.path.split('.')[1]
+            self.extension = self.path.split('.')[1]
         else:
-            self.extention = 'html'
+            self.extension = 'html'
         self.arguments = request_list[-1]
         for i in request_list:
             if 'Cookie:' in i: 
-                self.get_cookie = i.replace("Cookie: ","")
+                self.get_cookie = i.replace('Cookie: ','')
                 session_id = self.get_cookie.split(';')[0].replace('session_id=','')
                 if not session_id == '':
                     self.session_id = session_id
         print('METHOD:' + self.method)
         print('PATH:' + self.path)
-        print('EXT:' + self.extention)
+        print('EXT:' + self.extension)
         print('ARGUMENTS:' + self.arguments)
         if not self.get_cookie is None:
             print('COOKIE:' + self.get_cookie)
@@ -131,19 +139,19 @@ class web_handle(asyncio.Protocol):
         print('')
 
     def set_headers(self):
-        # Set headers for good responses
+        # Set default header for OK responses
         response_code = 200
         response_location = ''
         if not self.response_code is None: response_code = self.response_code
         if not self.response_location is None: response_location = self.response_location
-        http_status = self.response_codes[response_code] + '\r\n'  #'HTTP/1.1 200 OK\r\n'
-        content_type = 'Content-Type: ' + self.content_dict[self.extention] + ' \r\n'
+        http_status = self.response_codes[response_code] + '\r\n'  
+        content_type = 'Content-Type: ' + self.content_dict[self.extension] + ' \r\n'
         server_date = 'Date: ' + str(datetime.datetime.now()) + '\r\n'
         server_name = 'Server: wServer 0.01b\r\n'
         content_length = 'Content-Length: ' + self.response_length + '\r\n'
         accept_range = ''
-
-        if 'image' in self.content_dict[self.extention]: 
+        # Process images or text files 
+        if 'image' in self.content_dict[self.extension]: 
             accept_range = 'Accept-Ranges: bytes\r\n'
             head = http_status + content_type + accept_range + '\r\n'
             return head.encode()
@@ -157,25 +165,25 @@ class web_handle(asyncio.Protocol):
     def call_controller(self):        
         args = []
         parsed_url = self.path.split('?')
-        path1 = parsed_url[0]
-        path_func = path1.split('/')[1]
+        path_string = parsed_url[0]
+        path_func = path_string.split('/')[1]
         if path_func is '':path_func='index'
         for i in dir(self.controller):
             if not "__" in i:
                 if i == path_func:
-                    for x in path1.split('/'):
+                    for x in path_string.split('/'):
                         if not x is '': 
                             args.append(x)
                     if args:
                         del args[0]
                     if '?' in self.path:
-                        args1 = parsed_url[1].split('&')
-                        for x in args1:
+                        parsed_args = parsed_url[1].split('&')
+                        for x in parsed_args:
                             args.append(x.split('=')[1])
                     # Handle POST
                     if self.method == 'POST':
-                        args2 = self.arguments.split('&')
-                        for x in args2:
+                        parsed_args = self.arguments.split('&')
+                        for x in parsed_args:
                             args.append(x.split('=')[1])
                     self.arguments = args
                     func = getattr(self.controller, i)
@@ -220,7 +228,6 @@ class web_handle(asyncio.Protocol):
 
         reply = None
         reply = self.call_static()
-        #reply = self.call_controller()
         if reply is None: reply = self.call_controller()
         self.transport.write(reply)               
         self.transport.close()
