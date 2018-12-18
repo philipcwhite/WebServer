@@ -31,7 +31,7 @@ class controller(object):
 
     def home(self):
         response = '''<html>
-        <body><h1>Home</h1>''' + self.session_id + '<br />' + self.user() + '''</body>
+        <body><h1>Home</h1>''' + self.session_id + '<br />' + self.get_user() + '''</body>
         </html>'''
         return response
 
