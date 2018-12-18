@@ -131,7 +131,11 @@ class web_handle(asyncio.Protocol):
         self.method = request_list[0].split(" ")[0]
         self.path = request_list[0].split(" ")[1]
         if '.' in self.path:
-            self.extension = self.path.split('.')[1]
+            ext = self.path.split('.')[-1]
+            if ext in self.content_dict:
+                self.extension = ext
+            else:
+                self.extension = 'html'
         else:
             self.extension = 'html'
         self.arguments = request_list[-1]
@@ -200,13 +204,17 @@ class web_handle(asyncio.Protocol):
                     self.arguments = args
                     func = getattr(self.controller, i)
                     proc = None
-                    try:
+                    if args:
+                            proc = func(self, *args)
+                    else:
+                         proc = func(self)
+                    '''try:
                         if args:
                             proc = func(self, *args)
                         else:
                             proc = func(self)
                     except:
-                        proc = self.error_404()
+                        proc = self.error_404()'''
                     if proc is None: proc = ''
                     self.response_length=str(len(proc))
                     head = self.set_headers()
