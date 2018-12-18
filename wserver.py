@@ -10,7 +10,7 @@ import asyncio
 import ssl
 import uuid
 import datetime
-import urllib
+import urllib.parse
 
 class app_vars:
     # Server paths
@@ -75,13 +75,13 @@ class web_handle(asyncio.Protocol):
         if self.get_cookie is None:
             self.session_id = session_id
             if not self.set_cookie is None:
-                self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + app_vars.session_expire + '; path=/ \r\n'
+                self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + str(app_vars.session_expire) + '; path=/ \r\n'
             else:
-                self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + app_vars.session_expire + '; path=/ \r\n'
+                self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + str(app_vars.session_expire) + '; path=/ \r\n'
         else:
             if not 'session_id' in self.get_cookie:
                 if not self.set_cookie is None:
-                    self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + app_vars.session_expire + '; path=/ \r\n'   
+                    self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + str(app_vars.session_expire) + '; path=/ \r\n'   
         # Set other cookies
         if not key is None:
             if value is None: value = ''
