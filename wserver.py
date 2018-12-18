@@ -18,6 +18,7 @@ class app_vars:
     cert_path = './'
     cert_name = 'localhost.crt'
     cert_key = 'localhost.pem'
+    login_url = '/login'
 
 class session:
     session_list = []
@@ -73,10 +74,11 @@ class web_handle(asyncio.Protocol):
             if expires is None: expires = ''
             self.set_cookie += 'Set-Cookie: ' + str(key) + '=' + str(value) + '; max-age=' + str(expires) + '; path=/ \r\n'
 
-    def login(self, username):
-        expires = datetime.datetime.now() + datetime.timedelta(hours=1)
-        user=session(self.session_id, username, expires)
-        session.session_list.append(user)
+    def login(self, user):
+        if not user is None:
+            expires = datetime.datetime.now() + datetime.timedelta(hours=1)
+            user=session(self.session_id, user, expires)
+            session.session_list.append(user)
 
     def logout(self, user):
         for i, o in enumerate(session.session_list):
@@ -85,7 +87,7 @@ class web_handle(asyncio.Protocol):
                 break
         self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=0; path=/ \r\n'
 
-    def user(self):
+    def get_user(self):
         user = None
         expires = None
         for i in session.session_list:
@@ -101,7 +103,17 @@ class web_handle(asyncio.Protocol):
         if not user is None and expires > datetime.datetime.now():
             return user
         else:
+            return None
+
+    def get_auth(self):
+        authorized = False
+        if not self.get_user() is None:
+            authorized = True
+        if authorized == False:
+            self.redirect(app_vars.login_url)
             return 'Not Authorized'
+        else:
+            return self.get_user()
 
     def error_404(self):
         self.response_code = 404
