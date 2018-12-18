@@ -10,6 +10,7 @@ import asyncio
 import ssl
 import uuid
 import datetime
+import urllib
 
 class app_vars:
     server_ip = '0.0.0.0'
@@ -138,7 +139,7 @@ class web_handle(asyncio.Protocol):
                 self.extension = 'html'
         else:
             self.extension = 'html'
-        self.arguments = request_list[-1]
+        self.arguments = urllib.parse.unquote(request_list[-1])
         for i in request_list:
             if 'Cookie:' in i: 
                 self.get_cookie = i.replace('Cookie: ','')
