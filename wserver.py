@@ -13,7 +13,7 @@ import datetime
 import urllib
 
 class app_vars:
-    server_ip = '127.0.0.1'
+    server_ip = '0.0.0.0'
     server_port = 9999
     ssl_enabled = False
     cert_path = './'
@@ -21,6 +21,7 @@ class app_vars:
     cert_key = 'localhost.pem'
     login_url = '/login'
     app_path = './'
+    shutdown_ip = '127.0.0.1'
     stop_loop = False
 
 class session:
