@@ -13,9 +13,12 @@ import datetime
 import urllib
 
 class app_vars:
-    #Server Settings
-    app_path = './'
-    login_url = '/login'
+    # Server paths
+    app_path = 'C:/Progra~1/monitoring/web/'
+    app_login = '/login'
+
+    # Server configuration
+    server_name = 'wServer 0.01b'
     server_ip = '0.0.0.0'
     server_port = 9999
     session_expire = 3600
@@ -24,13 +27,13 @@ class app_vars:
     ssl_enabled = False
     cert_key = 'localhost.pem'
     cert_name = 'localhost.crt'
-    cert_path = './'
+    cert_path = 'C:/Progra~1/monitoring/web/'
 
     # Service shutdown settings
-    shutdown_ip = '127.0.0.1'
+    stop_ip = '127.0.0.1'
     stop_loop = False
 
-    # Content Settings
+    # Content settings
     content_type = {'css': 'text/css',
                     'gif': 'image/gif',
                     'htm': 'text/html',
@@ -121,7 +124,7 @@ class web_handle(asyncio.Protocol):
         user = self.get_user()
         if not user is None: authorized = True
         if authorized == False:
-            self.redirect(app_vars.login_url)
+            self.redirect(app_vars.app_login)
             return 'Not Authorized'
         else:
             return user
@@ -174,7 +177,7 @@ class web_handle(asyncio.Protocol):
         http_status = app_vars.http_codes[response_code] + '\r\n'  
         content_type = 'Content-Type: ' + app_vars.content_type[self.extension] + ' \r\n'
         server_date = 'Date: ' + str(datetime.datetime.now()) + '\r\n'
-        server_name = 'Server: wServer 0.01b\r\n'
+        server_name = 'Server: ' + app_vars.server_name + '\r\n'
         content_length = 'Content-Length: ' + self.response_length + '\r\n'
         accept_range = ''
         # Process images or text files 
