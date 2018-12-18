@@ -13,16 +13,38 @@ import datetime
 import urllib
 
 class app_vars:
+    #Server Settings
+    app_path = './'
+    login_url = '/login'
     server_ip = '0.0.0.0'
     server_port = 9999
+    session_expire = 3600
+
+    # SSL settings
     ssl_enabled = False
-    cert_path = './'
-    cert_name = 'localhost.crt'
     cert_key = 'localhost.pem'
-    login_url = '/login'
-    app_path = './'
+    cert_name = 'localhost.crt'
+    cert_path = './'
+
+    # Service shutdown settings
     shutdown_ip = '127.0.0.1'
     stop_loop = False
+
+    # Content Settings
+    content_type = {'css': 'text/css',
+                    'gif': 'image/gif',
+                    'htm': 'text/html',
+                    'html': 'text/html',
+                    'jpeg': 'image/jpeg',
+                    'jpg': 'image/jpg',
+                    'js': 'text/javascript',
+                    'ico': 'image/x-icon',
+                    'png': 'image/png',
+                    'text': 'text/plain',
+                    'txt': 'text/plain'}
+    http_codes = {200: 'HTTP/1.1 200 OK',
+                  302: 'HTTP/1.1 302 Found',
+                  404: 'HTTP/1.1 404 Not Found'}
 
 class session:
     session_list = []
@@ -40,38 +62,23 @@ class web_handle(asyncio.Protocol):
     extension = None
     method = None
     path = None
-    content_dict = {'css': 'text/css',
-                    'gif': 'image/gif',
-                    'htm': 'text/html',
-                    'html': 'text/html',
-                    'jpeg': 'image/jpeg',
-                    'jpg': 'image/jpg',
-                    'js': 'text/javascript',
-                    'ico': 'image/x-icon',
-                    'png': 'image/png',
-                    'text': 'text/plain',
-                    'txt': 'text/plain'}
     response_code = None
     response_location = None
     response_length = None
-    response_codes = {200: 'HTTP/1.1 200 OK',
-                      302: 'HTTP/1.1 302 Found',
-                      404: 'HTTP/1.1 404 Not Found'}
 
     def cookie(self, key = None, value = None, expires = None):
         # Set session cookie
-        session_expire = str(3600)
         session_id = str(uuid.uuid1())
         if self.get_cookie is None:
             self.session_id = session_id
             if not self.set_cookie is None:
-                self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + session_expire + '; path=/ \r\n'
+                self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + app_vars.session_expire + '; path=/ \r\n'
             else:
-                self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + session_expire + '; path=/ \r\n'
+                self.set_cookie = 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + app_vars.session_expire + '; path=/ \r\n'
         else:
             if not 'session_id' in self.get_cookie:
                 if not self.set_cookie is None:
-                    self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + session_expire + '; path=/ \r\n'   
+                    self.set_cookie += 'Set-Cookie: session_id=' + self.session_id + '; max-age=' + app_vars.session_expire + '; path=/ \r\n'   
         # Set other cookies
         if not key is None:
             if value is None: value = ''
@@ -80,7 +87,7 @@ class web_handle(asyncio.Protocol):
 
     def login(self, user):
         if not user is None:
-            expires = datetime.datetime.now() + datetime.timedelta(hours=1)
+            expires = datetime.datetime.now() + datetime.timedelta(seconds = app_vars.session_expire)
             user=session(self.session_id, user, expires)
             session.session_list.append(user)
 
@@ -111,13 +118,13 @@ class web_handle(asyncio.Protocol):
 
     def get_auth(self):
         authorized = False
-        if not self.get_user() is None:
-            authorized = True
+        user = self.get_user()
+        if not user is None: authorized = True
         if authorized == False:
             self.redirect(app_vars.login_url)
             return 'Not Authorized'
         else:
-            return self.get_user()
+            return user
 
     def error_404(self):
         self.response_code = 404
@@ -136,7 +143,7 @@ class web_handle(asyncio.Protocol):
         self.path = request_list[0].split(" ")[1]
         if '.' in self.path:
             ext = self.path.split('.')[-1]
-            if ext in self.content_dict:
+            if ext in app_vars.content_type:
                 self.extension = ext
             else:
                 self.extension = 'html'
@@ -164,14 +171,14 @@ class web_handle(asyncio.Protocol):
         response_location = ''
         if not self.response_code is None: response_code = self.response_code
         if not self.response_location is None: response_location = self.response_location
-        http_status = self.response_codes[response_code] + '\r\n'  
-        content_type = 'Content-Type: ' + self.content_dict[self.extension] + ' \r\n'
+        http_status = app_vars.http_codes[response_code] + '\r\n'  
+        content_type = 'Content-Type: ' + app_vars.content_type[self.extension] + ' \r\n'
         server_date = 'Date: ' + str(datetime.datetime.now()) + '\r\n'
         server_name = 'Server: wServer 0.01b\r\n'
         content_length = 'Content-Length: ' + self.response_length + '\r\n'
         accept_range = ''
         # Process images or text files 
-        if 'image' in self.content_dict[self.extension]: 
+        if 'image' in app_vars.content_type[self.extension]: 
             accept_range = 'Accept-Ranges: bytes\r\n'
             head = http_status + content_type + accept_range + '\r\n'
             return head.encode()
