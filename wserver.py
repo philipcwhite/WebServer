@@ -13,13 +13,15 @@ import datetime
 import urllib
 
 class app_vars:
-    server_ip = '0.0.0.0'
+    server_ip = '127.0.0.1'
     server_port = 9999
     ssl_enabled = False
     cert_path = './'
     cert_name = 'localhost.crt'
     cert_key = 'localhost.pem'
     login_url = '/login'
+    app_path = './'
+    stop_loop = False
 
 class session:
     session_list = []
@@ -205,17 +207,13 @@ class web_handle(asyncio.Protocol):
                     self.arguments = args
                     func = getattr(self.controller, i)
                     proc = None
-                    if args:
-                            proc = func(self, *args)
-                    else:
-                         proc = func(self)
-                    '''try:
+                    try:
                         if args:
                             proc = func(self, *args)
                         else:
                             proc = func(self)
                     except:
-                        proc = self.error_404()'''
+                        proc = self.error_404()
                     if proc is None: proc = ''
                     self.response_length=str(len(proc))
                     head = self.set_headers()
@@ -226,7 +224,7 @@ class web_handle(asyncio.Protocol):
         if '/favicon.ico' in self.path or '/static/' in self.path:
             url=self.path[1:]
             if 'favicon.ico' in url: url = 'static/favicon.ico'
-            f = open(url, "rb")
+            f = open(app_vars.app_path + url, "rb")
             obj = f.read()
             self.response_length=str(len(obj))
             head = self.set_headers()
@@ -238,21 +236,20 @@ class web_handle(asyncio.Protocol):
         self.transport = transport
 
     def data_received(self, data):
-        
-        message = data.decode('utf-8', 'ignore')
-        # Parse headers, route request, return data
-        self.get_headers(message)
-
         # Check to see if loop should end
-        #loop = asyncio.get_running_loop()
-        #loop.call_soon_threadsafe(loop.stop)
-
+        if app_vars.stop_loop == True:
+            loop = asyncio.get_running_loop()
+            loop.call_soon_threadsafe(loop.stop)
+        
+        # Parse headers, route request, return data
+        message = data.decode('utf-8', 'ignore')
+        self.get_headers(message)
         reply = None
         reply = self.call_static()
         if reply is None: reply = self.call_controller()
         self.transport.write(reply)               
         self.transport.close()
-        
+
 class web_server():
     async def connection_loop():
         loop = asyncio.get_running_loop()
