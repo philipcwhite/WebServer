@@ -17,6 +17,8 @@ app.start(controller)
 ```
 
 ## Updates
+12/27/2018 - Did some minor code cleanup.  
+
 12/16/2018 - Cleaned up some code an added some examples to the wsite.py file for authentication.  
 
 12/16/2018 - Added in redirects, 404 not found, and possibly fixed adding additional cookies.  There is a lot of ulgy code that needs to be cleaned up and a few more things that need to be added to application variables.  As this moves forward I will also make a load function to load config values.  I will also post a few more simple examples of how to do basic authentication, etc.
