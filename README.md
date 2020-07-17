@@ -17,6 +17,8 @@ app.start(controller)
 ```
 
 ## Updates
+7/717/2020 - I've been making some changes to the web server in my monitoring project.  These should migrate here eventually.  I started a template engine and changed the server to run as a package.  
+
 12/27/2018 - Did some minor code cleanup.  
 
 12/16/2018 - Cleaned up some code an added some examples to the wsite.py file for authentication.  
