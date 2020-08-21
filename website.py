@@ -1,4 +1,4 @@
-from web.server import app, app_vars
+from web.server import app
 from web.templates import render
 
 class controller(object):
