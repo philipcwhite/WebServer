@@ -1,12 +1,12 @@
 # WebServer
 
 ## About
-This is a simple Python webserver that I am writing using asyncio.  It is 'VERY' early in development.  The purpose of this app is to be a microframework that can host my monitoring app.  I believe if you are looking to write your own socket-based Python webserver, this app is a good starting point.  
+This is a simple Python webserver that I am writing using asyncio.  The purpose of this app is to be a microframework that can host my monitoring app.  I believe if you are looking to write your own socket-based Python webserver, this app is a good starting point.  
 
 ## Usage
 
 ```python
-from wserver import app
+from web.server import app
 
 class controller(object):
     def index(self):
@@ -17,7 +17,9 @@ app.start(controller)
 ```
 
 ## Updates
-7/717/2020 - I've been making some changes to the web server in my monitoring project.  These should migrate here eventually.  I started a template engine and changed the server to run as a package.  
+8/21/2020 - Version 0.2b with templating is now complete.  
+
+7/17/2020 - I've been making some changes to the web server in my monitoring project.  These should migrate here eventually.  I started a template engine and changed the server to run as a package.  
 
 12/27/2018 - Did some minor code cleanup.  
 
