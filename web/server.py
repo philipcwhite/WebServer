@@ -125,12 +125,7 @@ class web_handle(asyncio.Protocol):
             self.redirect(app_vars.app_login)
             return 'Not Authorized'
         else: return user
-
-    def error_404(self):
-        self.response_code = 404
-        html = '<html><head><title>404 Not Found</title></head><body><h1>404 Not Found</h1></body></html>'
-        return html
-
+        
     def redirect(self, location):
         self.response_code = 302
         self.response_location = 'Location: ' + location + '\r\n'
@@ -184,7 +179,15 @@ class web_handle(asyncio.Protocol):
             if not self.set_cookie is None: cookie_text = self.set_cookie
             head = http_status + content_type + server_date + server_name + content_length + cookie_text + response_location + '\r\n'
             return head.encode()  
-  
+
+    def error_404(self):
+        self.response_code = 404
+        html = '<html><head><title>404 Not Found</title></head><body><h1>404 Not Found</h1></body></html>'
+        self.response_length=str(len(html))
+        head = self.set_headers()
+        reply = head + html.encode()
+        return reply
+
     def call_controller(self):        
         args = []
         parsed_url = self.path.split('?')
@@ -208,13 +211,8 @@ class web_handle(asyncio.Protocol):
                     self.arguments = args
                     func = getattr(self.controller, i)
                     proc = None
-                    try:
-                        if args: proc = func(self, *args)
-                        else: proc = func(self)
-                    except: proc = self.error_404()
                     if args: proc = func(self, *args)
                     else: proc = func(self)
-
                     if proc is None: proc = ''
                     self.response_length=str(len(proc))
                     head = self.set_headers()
@@ -247,6 +245,7 @@ class web_handle(asyncio.Protocol):
         reply = None
         reply = self.call_static()
         if reply is None: reply = self.call_controller()
+        if reply is None: reply = self.error_404()
         self.transport.write(reply)               
         self.transport.close()
 
