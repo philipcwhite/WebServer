@@ -17,6 +17,8 @@ app.start(controller)
 ```
 
 ## Updates
+11/20/2020 - Fixed 404 error page.
+
 8/21/2020 - Version 0.2b with templating is now complete.  
 
 7/17/2020 - I've been making some changes to the web server in my monitoring project.  These should migrate here eventually.  I started a template engine and changed the server to run as a package.  
